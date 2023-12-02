@@ -11,11 +11,21 @@
 @implementation AppDelegate
 
 -(void)awakeFromNib{
+
+    self.locked = [NSUserDefaults.standardUserDefaults boolForKey:@"locked"];
+
     self.statusItem = [[NSStatusBar systemStatusBar] statusItemWithLength:NSVariableStatusItemLength];
     [self.statusItem setMenu:self.statusMenu];
-    [self.statusItem setTitle:@"Volume-Unlocked"];
+    if (self.locked == true) {
+        self.lockedVolume = [NSUserDefaults.standardUserDefaults floatForKey:@"lockedvolume"];
+        [self.statusItem setTitle:@"Volume-Locked"];
+    }
+    else {
+        [self.statusItem setTitle:@"Volume-Unlocked"];
+    }
     [self.statusItem setHighlightMode:YES];
 }
+
 
 - (void)applicationDidFinishLaunching:(NSNotification *)aNotification
 {
@@ -34,9 +44,13 @@
         kAudioObjectPropertyElementMaster
     };
     
+    
+    Float32 volume = self.lockedVolume;
+    UInt32 volumeSize = sizeof(volume);
+
     AudioDeviceID deviceID;
-    UInt32 dataSize = sizeof(deviceID);
-    OSStatus result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &devicePropertyAddress, 0, NULL, &dataSize, &deviceID);
+    UInt32 deviceIDSize = sizeof(deviceID);
+    OSStatus result = AudioObjectGetPropertyData(kAudioObjectSystemObject, &devicePropertyAddress, 0, NULL, &deviceIDSize, &deviceID);
     
     if(kAudioHardwareNoError != result) {
         // Handle the error
@@ -50,45 +64,82 @@
     };
     
     if(AudioObjectHasProperty(deviceID, &volumePropertyAddress)) {
-        OSStatus result = AudioObjectAddPropertyListener(deviceID, &volumePropertyAddress, myAudioObjectPropertyListenerProc, (__bridge void *)(self));
-        if(kAudioHardwareNoError != result) {
-            // Handle the error
+
+        if (self.locked == true) {
             
+            result = AudioObjectSetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, volumeSize, &volume);
+            if(kAudioHardwareNoError != result) {
+                // Handle the error
+             }
             
         }
-        Float32 volume = 0;
-        UInt32 dataSize = sizeof(volume);
-        result = AudioObjectGetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, &dataSize, &volume);
+        else {
+            result = AudioObjectGetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, &volumeSize, &volume);
+            
+            if(kAudioHardwareNoError != result) {
+                // Handle the error
+            }
+            self.lockedVolume = volume;
+
+        }
         
+        result = AudioObjectAddPropertyListener(deviceID, &volumePropertyAddress, myAudioObjectPropertyListenerProc, (__bridge void *)(self));
         if(kAudioHardwareNoError != result) {
             // Handle the error
         }
-        self.lockedVolume = volume;
         
+        // end of Master Channel code
         
     }
     else {
         // Typically the L and R channels are 1 and 2 respectively, but could be different
         volumePropertyAddress.mElement = 1;
-        OSStatus result = AudioObjectAddPropertyListener(deviceID, &volumePropertyAddress, myAudioObjectPropertyListenerProc, (__bridge void *)(self));
-        if(kAudioHardwareNoError != result) {
-            // Handle the error
-        }
-        Float32 volume = 0;
-        UInt32 dataSize = sizeof(volume);
-        result = AudioObjectGetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, &dataSize, &volume);
         
+        
+        if (self.locked == true) {
+            
+            result = AudioObjectSetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, volumeSize, &volume);
+            if(kAudioHardwareNoError != result) {
+                // Handle the error
+            }
+
+        }
+
+        else {
+            result = AudioObjectGetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, &volumeSize, &volume);
+            
+            if(kAudioHardwareNoError != result) {
+                // Handle the error
+            }
+            self.lockedVolume = volume;
+
+        }
+        
+        
+        result = AudioObjectAddPropertyListener(deviceID, &volumePropertyAddress, myAudioObjectPropertyListenerProc, (__bridge void *)(self));
         if(kAudioHardwareNoError != result) {
             // Handle the error
         }
-        self.lockedVolume = volume;
+        
+       volumePropertyAddress.mElement = 2;
+        
+        if (self.locked == true) {
+            
+            result = AudioObjectSetPropertyData(deviceID, &volumePropertyAddress, 0, NULL, volumeSize, &volume);
+            if(kAudioHardwareNoError != result) {
+                // Handle the error
+            }
+            
+        }
 
-        volumePropertyAddress.mElement = 2;
         result = AudioObjectAddPropertyListener(deviceID, &volumePropertyAddress, myAudioObjectPropertyListenerProc, (__bridge void *)(self));
         if(kAudioHardwareNoError != result) {
             // Handle the error
         }
     }
+    
+    
+    
     [self.levelItem setTitle:[NSString stringWithFormat:@"Level: %f", self.lockedVolume]];
     
     AudioObjectPropertyAddress mutePropertyAddress = {
@@ -132,8 +183,8 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
             case kAudioDevicePropertyVolumeScalar:
             {
                 Float32 volume = 0;
-                UInt32 dataSize = sizeof(volume);
-                OSStatus result = AudioObjectGetPropertyData(inObjectID, &currentAddress, 0, NULL, &dataSize, &volume);
+                UInt32 volumeSize = sizeof(volume);
+                OSStatus result = AudioObjectGetPropertyData(inObjectID, &currentAddress, 0, NULL, &volumeSize, &volume);
                 
                 if(kAudioHardwareNoError != result) {
                     // Handle the error
@@ -144,7 +195,7 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
                 if ([(__bridge AppDelegate *)inClientData locked]) {
                     if (volume != [(__bridge AppDelegate *)inClientData lockedVolume]) {
                         volume = [(__bridge AppDelegate *)inClientData lockedVolume];
-                        OSStatus result = AudioObjectSetPropertyData(inObjectID, &currentAddress, 0, NULL, dataSize, &volume);
+                        OSStatus result = AudioObjectSetPropertyData(inObjectID, &currentAddress, 0, NULL, volumeSize, &volume);
                         if(kAudioHardwareNoError != result) {
                             // Handle the error
                             continue;
@@ -163,8 +214,8 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
             {
                 if ([(__bridge AppDelegate *)inClientData locked]) {
                     UInt32 mute = 0;
-                    UInt32 dataSize = sizeof(mute);
-                    OSStatus result = AudioObjectGetPropertyData(inObjectID, &currentAddress, 0, NULL, &dataSize, &mute);
+                    UInt32 muteSize = sizeof(mute);
+                    OSStatus result = AudioObjectGetPropertyData(inObjectID, &currentAddress, 0, NULL, &muteSize, &mute);
                     
                     if(kAudioHardwareNoError != result) {
                         // Handle the error
@@ -173,7 +224,7 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
                     //   NSLog(@"Mute: %u", (unsigned int)mute);
                     if (mute) {
                         mute = 0;
-                        OSStatus result = AudioObjectSetPropertyData(inObjectID, &currentAddress, 0, NULL, dataSize, &mute);
+                        OSStatus result = AudioObjectSetPropertyData(inObjectID, &currentAddress, 0, NULL, muteSize, &mute);
                         if(kAudioHardwareNoError != result) {
                             // Handle the error
                             continue;
@@ -194,9 +245,35 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
 - (IBAction)lock:(id)sender {
     self.locked = YES;
     [self.statusItem setTitle:@"Volume-Locked"];
+    [NSUserDefaults.standardUserDefaults setFloat:self.lockedVolume forKey:@"lockedvolume"];
+    [NSUserDefaults.standardUserDefaults setBool:true forKey:@"locked"];
 }
 
 - (IBAction)unlock:(id)sender {
+    
+    if (self.authorizeVolumeLock == true) {
+        self.locked = NO;
+        [self.statusItem setTitle:@"Volume-Unlocked"];
+        [NSUserDefaults.standardUserDefaults setBool:false forKey:@"locked"];
+
+    }
+}
+
+- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
+    
+    if (self.locked == true) {
+         if (self.authorizeVolumeLock != true) {
+            return NSTerminateCancel;
+        }
+    }
+    return NSTerminateNow;
+
+    
+    
+}
+
+- (bool) authorizeVolumeLock {
+    
     AuthorizationRights *authorizedRights;
     AuthorizationItem myItems[1];
     
@@ -216,11 +293,13 @@ static OSStatus myAudioObjectPropertyListenerProc(AudioObjectID                 
                                                  kAuthorizationFlagExtendRights + kAuthorizationFlagInteractionAllowed + kAuthorizationFlagDestroyRights,
                                                  &authorizedRights
                                                  );
-    //   NSLog(@"osStatus: %d", osStatus);
-    
     if (!osStatus) {
-        self.locked = NO;
-        [self.statusItem setTitle:@"Volume-Unlocked"];
+        return true;
     }
+    
+    return false;
+    
 }
+
+
 @end

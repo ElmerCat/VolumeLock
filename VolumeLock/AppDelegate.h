@@ -20,5 +20,6 @@
 @property (weak) IBOutlet NSMenuItem *levelItem;
 - (IBAction)lock:(id)sender;
 - (IBAction)unlock:(id)sender;
+- (bool) authorizeVolumeLock;
 
 @end
