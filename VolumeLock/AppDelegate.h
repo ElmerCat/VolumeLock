@@ -3,15 +3,17 @@
 //  VolumeControlLock
 //
 //  Created by Elmer on 2/8/13.
-//  Copyright (c) 2013 ElmerCat. All rights reserved.
+//  New Version 1.2 by Elmer on 12/1/23.
+//  Copyright (c) 2013, 2023 ElmerCat. All rights reserved.
 //
 
 #import <Cocoa/Cocoa.h>
 #import <AudioToolbox/AudioServices.h>
 
 @interface AppDelegate : NSObject <NSApplicationDelegate> {
-    AuthorizationRef authorizationRef;
-}
+    NSAttributedString *lockedTitle;
+    NSAttributedString *unlockedTitle;
+ }
 
 @property (weak) IBOutlet NSMenu *statusMenu;
 @property NSStatusItem *statusItem;

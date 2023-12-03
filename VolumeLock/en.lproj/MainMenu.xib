@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22504" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
+<document type="com.apple.InterfaceBuilder3.Cocoa.XIB" version="3.0" toolsVersion="22155" targetRuntime="MacOSX.Cocoa" propertyAccessControl="none" useAutolayout="YES">
     <dependencies>
-        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22504"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.CocoaPlugin" version="22155"/>
     </dependencies>
     <objects>
         <customObject id="-2" userLabel="File's Owner" customClass="NSApplication">
@@ -640,9 +640,16 @@
                 <menuItem isSeparatorItem="YES" id="631"/>
                 <menuItem title="Level: 000" id="601">
                     <modifierMask key="keyEquivalentModifierMask"/>
+                    <connections>
+                        <binding destination="494" name="enabled" keyPath="self" id="vOC-Zk-xij">
+                            <dictionary key="options">
+                                <string key="NSValueTransformerName">NSIsNotNil</string>
+                            </dictionary>
+                        </binding>
+                    </connections>
                 </menuItem>
                 <menuItem isSeparatorItem="YES" id="602"/>
-                <menuItem title="Lock" id="538">
+                <menuItem title="Lock" image="NSLockLockedTemplate" id="538">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="lock:" target="494" id="610"/>
@@ -653,7 +660,7 @@
                         </binding>
                     </connections>
                 </menuItem>
-                <menuItem title="Unlock" id="598">
+                <menuItem title="Unlock" image="NSLockUnlockedTemplate" id="598">
                     <modifierMask key="keyEquivalentModifierMask"/>
                     <connections>
                         <action selector="unlock:" target="494" id="607"/>
@@ -670,5 +677,10 @@
             </items>
             <point key="canvasLocation" x="81" y="152"/>
         </menu>
+        <userDefaultsController representsSharedInstance="YES" id="tKf-t1-wdJ"/>
     </objects>
+    <resources>
+        <image name="NSLockLockedTemplate" width="19" height="19"/>
+        <image name="NSLockUnlockedTemplate" width="21" height="19"/>
+    </resources>
 </document>
